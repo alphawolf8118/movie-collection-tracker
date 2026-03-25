@@ -1,0 +1,58 @@
+<!-- templates/partials/card.html -->
+{% set total = collection.movies | length %}
+{% set collected = collection.movies | selectattr('collected') | list | length %}
+{% set progress = (collected / total * 100) | round(1) if total > 0 else 0 %}
+
+<div class="bg-white rounded-2xl shadow-xl overflow-hidden collection-card"
+     data-collection-id="{{ collection.id }}">
+
+  <!-- Header – clickable -->
+  <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 cursor-pointer select-none">
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">{{ collection.name }}</h2>
+      <div class="flex items-center gap-6">
+        <div class="text-right">
+          <div class="text-3xl font-extrabold">{{ collected }} / {{ total }}</div>
+          <div class="text-lg opacity-90">{{ progress }}% complete</div>
+        </div>
+        <svg class="w-8 h-8 transition-transform duration-300 arrow {% if open_id == collection.id %}rotate-180{% endif %}" 
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="mt-5 bg-white/30 rounded-full h-5 overflow-hidden">
+      <div class="h-full bg-white transition-all duration-1000 ease-out"
+           style="width: {{ progress }}%"></div>
+    </div>
+  </div>
+
+  <!-- Movies panel -->
+  <div class="movies-panel {% if open_id == collection.id %}open{% endif %}">
+    <div class="p-6 space-y-3 bg-gray-50">
+      {% for movie in collection.movies | sort(attribute='release_date') %}
+      <!-- same movie row as before, but with the new HTMX checkbox -->
+      <div class="flex items-center justify-between bg-white rounded-xl px-6 py-4 shadow hover:shadow-md">
+        <div class="flex items-center gap-4">
+          <input type="checkbox"
+                 name="collected"
+                 {% if movie.collected %}checked{% endif %}
+                 hx-post="{{ url_for('toggle_movie', movie_id=movie.id) }}"
+                 hx-target="closest .collection-card"
+                 hx-swap="outerHTML"
+                 class="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+          <span class="text-lg font-medium text-gray-800">{{ movie.name }}</span>
+        </div>
+        <span class="text-gray-500">
+          {{ movie.release_date.strftime('%B %d, %Y') if movie.release_date else 'No date' }}
+        </span>
+      </div>
+      {% endfor %}
+
+      <div class="pt-4">
+        <a href="{{ url_for('add_movie', collection_id=collection.id) }}" class="...">+ Add Movie</a>
+        <!-- delete button stays the same -->
+      </div>
+    </div>
+  </div>
+</div>

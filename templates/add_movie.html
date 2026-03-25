@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Movie to {{ collection.name }}{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-4">Add Movie to {{ collection.name }}</h1>
+<form method="POST" class="space-y-4">
+    <div>
+        <label for="name" class="block">Movie Name:</label>
+        <input type="text" id="name" name="name" class="border p-2 w-full" required>
+    </div>
+    <div>
+        <label for="release_date" class="block">Release Date (YYYY-MM-DD):</label>
+        <input type="text" id="release_date" name="release_date" class="border p-2 w-full" placeholder="2024-07-26">
+    </div>
+    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Add</button>
+</form>
+{% endblock %}

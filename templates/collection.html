@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ collection.name }}{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-2">{{ collection.name }}</h1>
+<p class="mb-4">Progress: {{ collected_count }} / {{ total }} ({{ progress | round(2) }}%)</p>
+<div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ progress }}%"></div>
+</div>
+
+<ul class="space-y-4">
+    {% for movie in movies %}
+    <li class="flex items-center justify-between bg-white p-4 rounded shadow">
+        <div class="flex items-center">
+            <a href="{{ url_for('toggle_movie', movie_id=movie.id) }}" class="mr-4">
+                {% if movie.collected %}
+                <span class="text-green-500">✔️</span>
+                {% else %}
+                <span class="text-gray-400">⬜</span>
+                {% endif %}
+            </a>
+            <span>{{ movie.name }}</span>
+        </div>
+        <span class="text-gray-600">{{ movie.release_date.strftime('%B %d, %Y') if movie.release_date else 'N/A' }}</span>
+    </li>
+    {% endfor %}
+</ul>
+
+<a href="{{ url_for('add_movie', collection_id=collection.id) }}" class="mt-4 inline-block bg-green-500 text-white px-4 py-2 rounded">Add Movie to This Collection</a>
+<a href="{{ url_for('index') }}" class="mt-4 inline-block bg-gray-500 text-white px-4 py-2 rounded ml-2">Back to Collections</a>
+{% endblock %}

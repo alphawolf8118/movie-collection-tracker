@@ -1,0 +1,190 @@
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+{% block title %}My Movie Collections{% endblock %}
+
+{% block content %}
+
+<div class="relative">
+  <h1 class="text-4xl font-bold text-center my-10 text-gray-800">My Movie Collections</h1>
+
+  <!-- Export button – top right -->
+  <div class="absolute top-0 right-4">
+    <button onclick="exportMissing()"
+            class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
+      Export Missing → Print
+    </button>
+  </div>
+</div>
+
+<div class="max-w-5xl mx-auto space-y-8 px-4">
+  {% for collection in collections %}
+    {% set total = collection.movies | length %}
+    {% set collected = collection.movies | selectattr('collected') | list | length %}
+    {% set progress = (collected / total * 100) | round(1) if total > 0 else 0 %}
+
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden collection-card"
+         data-collection-id="{{ collection.id }}">
+
+      <!-- Header – clickable -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 cursor-pointer select-none">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold">{{ collection.name }}</h2>
+          <div class="flex items-center gap-6">
+            <div class="text-right">
+              <div class="text-3xl font-extrabold">{{ collected }} / {{ total }}</div>
+              <div class="text-lg opacity-90">{{ progress }}% complete</div>
+            </div>
+            <svg class="w-8 h-8 transition-transform duration-300 arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="mt-5 bg-white/30 rounded-full h-5 overflow-hidden">
+          <div class="h-full bg-white transition-all duration-1000 ease-out"
+               style="width: {{ progress }}%"></div>
+        </div>
+      </div>
+
+      <!-- Collapsible panel – stays open if this collection was just toggled -->
+      <div class="movies-panel{% if open_id == collection.id %} open{% endif %}">
+        <div class="p-6 space-y-3 bg-gray-50">
+          {% for movie in collection.movies | sort(attribute='release_date') %}
+          <div class="flex items-center justify-between bg-white rounded-xl px-6 py-4 shadow hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+              <input type="checkbox"
+                    name="collected"
+                    {% if movie.collected %}checked{% endif %}
+                    hx-post="{{ url_for('toggle_movie', movie_id=movie.id) }}"
+                    hx-target="closest .collection-card"
+                    hx-swap="outerHTML"
+                    hx-headers='{"X-Requested-With": "XMLHttpRequest"}'
+                    class="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+              <span class="text-lg font-medium text-gray-800">{{ movie.name }}</span>
+            </div>
+            <span class="text-gray-500">
+              {{ movie.release_date.strftime('%B %d, %Y') if movie.release_date else 'No date' }}
+            </span>
+          </div>
+          {% endfor %}
+
+          <div class="pt-4">
+            <a href="{{ url_for('add_movie', collection_id=collection.id) }}"
+               class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+              + Add Movie
+            </a>
+
+            <form action="{{ url_for('delete_collection', collection_id=collection.id) }}" 
+                    method="POST" 
+                    onsubmit="return confirm('Delete entire collection «{{ collection.name }}» and all its {{ collection.movies|length }} movies?\nThis cannot be undone!');"
+                    class="inline">
+                <input type="hidden" name="confirm" value="yes">
+                <button type="submit"
+                        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition ml-4">
+                Delete Collection
+                </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- Add new collection -->
+  <div class="text-center my-12">
+    <a href="{{ url_for('add_collection') }}"
+       class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl py-5 px-10 rounded-full shadow-2xl hover:shadow-purple-500/50 transform hover:scale-105 transition">
+      + Create New Collection
+    </a>
+  </div>
+</div>
+
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<script>
+  // This runs on initial page load AND after every HTMX update
+  function initCollapsibleCards() {
+    document.querySelectorAll('.collection-card > div:first-child').forEach(header => {
+      // Remove any old listener to prevent duplicates
+      header.onclick = null;
+
+      header.addEventListener('click', function () {
+        const panel = this.nextElementSibling;  // .movies-panel
+        const arrow = this.querySelector('.arrow');
+
+        panel.classList.toggle('open');
+        arrow.classList.toggle('rotate-180');
+      });
+    });
+  }
+
+  // Run once on page load
+  initCollapsibleCards();
+
+  // Re-run after every HTMX swap (so new cards get the click handler)
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    initCollapsibleCards();
+  });
+</script>
+
+<script>
+function exportMissing() {
+  let rows = [];
+
+  document.querySelectorAll('.collection-card').forEach(card => {
+    const collectionName = card.querySelector('h2').textContent.trim();
+
+    card.querySelectorAll('.movies-panel input[type="checkbox"]').forEach(checkbox => {
+      if (!checkbox.checked) {
+        const movieName = checkbox.closest('.flex').querySelector('span.text-lg').textContent.trim();
+
+        rows.push({
+          movie: movieName,
+          collection: collectionName
+        });
+      }
+    });
+  });
+
+  if (rows.length === 0) {
+    alert("You own every movie! Legendary status achieved.");
+    return;
+  }
+
+  // Build CSV
+  let csv = "Movie,Collection\n";
+
+  rows.forEach(r => {
+    csv += `"${r.movie}","${r.collection}"\n`;
+  });
+
+  // Download CSV
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Movies-To-Buy-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+
+<style>
+  .movies-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.6s ease-out;
+  }
+  .movies-panel.open {
+    max-height: 4000px;   /* plenty for huge collections */
+  }
+  .arrow {
+    transition: transform 0.4s ease;
+  }
+  .rotate-180 {
+    transform: rotate(180deg);
+  }
+</style>
+{% endblock %}
