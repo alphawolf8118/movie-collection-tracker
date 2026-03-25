@@ -1,5 +1,7 @@
 # Movie Collection Tracker
 
+![Screenshot](screenshots/Movie-Collection-Tracker.png)
+
 A simple Flask application I built to track my movie series collections. Each collection represents a movie franchise (for example: Pirates of the Caribbean, Middle-earth, the DCEU, DC Elseworlds, the Dark Knight Trilogy, etc.), and each collection contains the movies in that series. The app lets me track which movies I own and which ones I’m still missing.
 
 Collections are fully customizable — you can name them anything and add any movies you want.
