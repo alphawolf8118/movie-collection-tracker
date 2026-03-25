@@ -11,9 +11,10 @@ Collections are fully customizable — you can name them anything and add any mo
 - Create and manage movie series collections  
 - Add movies with optional release dates  
 - Mark movies as collected or missing  
-- View progress for each collection  
+- View progress for each collection (owned vs total)  
+- Export collection status to a file for external use (e.g., spreadsheets)  
 - Clean, simple UI using HTML templates  
-- SQLite database stored in Flask’s `instance/` folder  
+- SQLite database stored in Flask’s `instance/` folder 
 
 ---
 
@@ -82,6 +83,12 @@ python seed.py
 ```
 
 The script only inserts a collection if it doesn’t already exist.
+
+---
+Exporting Collection Status
+The app includes an export feature that lets you save your collection status to a file so you can work with it in external tools (such as spreadsheets). This makes it easy to review which movies you own or are missing outside the app.
+
+(Implementation details are kept simple and focused on my own workflow.)
 
 ---
 
